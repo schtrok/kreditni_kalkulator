@@ -270,12 +270,9 @@
     .table-wrapper {
       border:1px solid var(--border-soft);
       border-radius:var(--radius-md);
-      overflow:hidden;
       box-shadow:0 30px 60px rgba(0,0,0,.7);
-      max-height:400px;
-      overflow:auto;
-      position:relative;
       background:var(--surface-alt);
+      /* maknuto max-height/overflow da tablica raste koliko treba */
     }
 
     table {
@@ -333,7 +330,6 @@
     @media (max-width:600px){
       header .title {font-size:1.05rem;}
       .tagline {font-size:.8rem;}
-      .table-wrapper {max-height:300px;}
     }
   </style>
 </head>
@@ -601,7 +597,6 @@
       const totalInterest = result.totalInterest;
       const totalLump = result.totalLump;
 
-      // zadnja preostala glavnica (trebala bi biti 0)
       const lastRow = result.rows[result.rows.length-1];
       const endSavings = lastRow ? lastRow.savings : 0;
 
@@ -711,7 +706,6 @@
         isNaN(years) || years<=0 ||
         isNaN(allocation) || allocation<0
       ){
-        // ako nešto fali, ne računamo
         renderSummary(null, allocation);
         renderTable([]);
         return;
