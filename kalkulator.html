@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Stambeni kredit kalkulator (anuitet + godišnje prijevremene uplate)</title>
+  <style>
+    :root {
+      --bg:#0f172a;
+      --surface:#1e293b;
+      --surface-alt:#334155;
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --accent:#38bdf8;
+      --border:rgba(148,163,184,.25);
+      --border-soft:rgba(148,163,184,.12);
+      --row-accent:rgba(56,189,248,.07);
+      --radius-lg:1rem;
+      --radius-md:.75rem;
+      --radius-sm:.5rem;
+    }
+
+    * {
+      box-sizing:border-box;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    body {
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      padding:2rem;
+    }
+
+    .app {
+      width:100%;
+      max-width:1300px;
+      display:flex;
+      flex-direction:column;
+      gap:1.5rem;
+    }
+
+    header .title {
+      font-size:1.25rem;
+      font-weight:600;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      flex-wrap:wrap;
+    }
+
+    header .badge {
+      background:var(--row-accent);
+      color:var(--accent);
+      border:1px solid var(--accent);
+      border-radius:999px;
+      font-size:.7rem;
+      line-height:1;
+      font-weight:500;
+      padding:.4rem .6rem;
+    }
+
+    header .tagline {
+      font-size:.9rem;
+      color:var(--muted);
+      margin-top:.25rem;
+      max-width:800px;
+      line-height:1.4;
+    }
+
+    .card {
+      background:var(--surface);
+      border:1px solid var(--border-soft);
+      border-radius:var(--radius-lg);
+      box-shadow:0 30px 80px rgba(0,0,0,.7);
+      padding:1.25rem 1.25rem 1rem;
+    }
+
+    .section-head {
+      display:flex;
+      flex-wrap:wrap;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:.5rem;
+      margin-bottom:1rem;
+    }
+
+    .section-head h2 {
+      margin:0;
+      font-size:1rem;
+      font-weight:600;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+    }
+
+    .section-head h2 .dot {
+      width:.5rem;
+      height:.5rem;
+      background:var(--accent);
+      border-radius:999px;
+      box-shadow:0 0 12px var(--accent);
+    }
+
+    .section-head .sub {
+      font-size:.8rem;
+      color:var(--muted);
+      line-height:1.3;
+    }
+
+    /* FORM  */
+    form#calcForm {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));
+      gap:1rem 1.25rem;
+    }
+
+    .field {
+      display:flex;
+      flex-direction:column;
+      gap:.4rem;
+    }
+
+    .field label {
+      font-size:.8rem;
+      font-weight:500;
+      color:var(--text);
+      display:flex;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      line-height:1.3;
+    }
+
+    .field label span.tip {
+      font-weight:400;
+      color:var(--muted);
+      font-size:.7rem;
+    }
+
+    .field input,
+    .field select {
+      -webkit-appearance:none;
+      appearance:none;
+      width:100%;
+      background:var(--bg);
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:var(--radius-md);
+      padding:.75rem .8rem;
+      font-size:.9rem;
+      line-height:1.2;
+      outline:none;
+      box-shadow:0 0 0 2px transparent;
+      transition:border-color .15s, box-shadow .15s;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color:var(--accent);
+      box-shadow:0 0 0 2px rgba(56,189,248,.4);
+    }
+
+    .calc-col-span {
+      grid-column:1 / -1;
+      display:flex;
+      flex-wrap:wrap;
+      align-items:flex-end;
+      justify-content:flex-start;
+      gap:1rem;
+    }
+
+    .calc-button {
+      cursor:pointer;
+      border:0;
+      border-radius:var(--radius-md);
+      background:var(--accent);
+      color:#002233;
+      font-weight:600;
+      font-size:.9rem;
+      line-height:1.2;
+      padding:.8rem 1rem;
+      min-width:140px;
+      box-shadow:0 20px 40px rgba(56,189,248,.4);
+      transition:box-shadow .15s, filter .15s;
+    }
+
+    .calc-button:hover {
+      filter:brightness(1.05);
+      box-shadow:0 30px 60px rgba(56,189,248,.5);
+    }
+
+    .disclaimer {
+      margin-top:1rem;
+      font-size:.7rem;
+      line-height:1.4;
+      color:var(--muted);
+      max-width:900px;
+    }
+
+    /* SUMMARY  */
+    .summary-wrapper {
+      display:flex;
+      flex-direction:column;
+      gap:1rem;
+    }
+
+    .warning {
+      background:rgba(251,191,36,.07);
+      color:#facc15;
+      border:1px solid rgba(250,204,21,.3);
+      border-radius:var(--radius-md);
+      padding:.75rem 1rem;
+      font-size:.8rem;
+      line-height:1.4;
+      font-weight:500;
+    }
+
+    .summary-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));
+      gap:1rem;
+    }
+
+    .summary-item {
+      background:var(--surface-alt);
+      border:1px solid var(--border-soft);
+      border-radius:var(--radius-md);
+      padding:1rem 1rem .9rem;
+      min-height:110px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      box-shadow:0 20px 40px rgba(0,0,0,.6);
+    }
+
+    .summary-label {
+      font-size:.75rem;
+      font-weight:500;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      line-height:1.3;
+      margin-bottom:.5rem;
+    }
+
+    .summary-value {
+      font-size:1.1rem;
+      font-weight:600;
+      color:var(--text);
+      line-height:1.3;
+      word-break:break-word;
+    }
+
+    .summary-hint {
+      font-size:.7rem;
+      font-weight:400;
+      color:var(--muted);
+      line-height:1.3;
+      margin-top:.4rem;
+    }
+
+    /* TABLE */
+    .table-wrapper {
+      border:1px solid var(--border-soft);
+      border-radius:var(--radius-md);
+      overflow:hidden;
+      box-shadow:0 30px 60px rgba(0,0,0,.7);
+      max-height:400px;
+      overflow:auto;
+      position:relative;
+      background:var(--surface-alt);
+    }
+
+    table {
+      border-collapse:collapse;
+      width:100%;
+      font-size:.8rem;
+      min-width:800px;
+      color:var(--text);
+    }
+
+    thead {
+      position:sticky;
+      top:0;
+      z-index:10;
+      background:var(--surface-alt);
+      box-shadow:0 2px 0 0 var(--border-soft);
+    }
+
+    th {
+      text-align:right;
+      font-weight:500;
+      color:var(--muted);
+      padding:.6rem .75rem;
+      line-height:1.2;
+      white-space:nowrap;
+      background:var(--surface-alt);
+    }
+
+    th.col-left,
+    td.col-left {
+      text-align:left;
+    }
+
+    tbody tr {
+      border-bottom:1px solid var(--border-soft);
+    }
+
+    tbody tr.lump-row {
+      background:var(--row-accent);
+    }
+
+    td {
+      text-align:right;
+      padding:.6rem .75rem;
+      line-height:1.2;
+      color:var(--text);
+      vertical-align:top;
+    }
+
+    td.col-left {
+      font-weight:500;
+      color:var(--text);
+    }
+
+    @media (max-width:600px){
+      header .title {font-size:1.05rem;}
+      .tagline {font-size:.8rem;}
+      .table-wrapper {max-height:300px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <header>
+      <div class="title">
+        <span>🏠 Stambeni kredit kalkulator</span>
+        <span class="badge">eksperimentalno</span>
+      </div>
+      <div class="tagline">
+        Usporedi anuitet vs. otplatu s fiksnom glavnicom, dodaj "mjesečno odvajanje", simuliraj godišnje prijevremene uplate glavnice i vidi koliko se kredit skraćuje.
+      </div>
+    </header>
+
+    <!-- INPUT CARD -->
+    <section class="card">
+      <div class="section-head">
+        <h2><span class="dot"></span> Ulazni parametri</h2>
+        <div class="sub">Unesi svoj scenarij i stisni "Izračunaj plan".</div>
+      </div>
+
+      <form id="calcForm">
+        <div class="field">
+          <label for="principal">
+            Iznos kredita
+            <span class="tip">€</span>
+          </label>
+          <input id="principal" type="number" min="0" step="1000" required value="150000" />
+        </div>
+
+        <div class="field">
+          <label for="rate">
+            Godišnja kamatna stopa
+            <span class="tip">% fiksno</span>
+          </label>
+          <input id="rate" type="number" min="0" step="0.01" required value="3.5" />
+        </div>
+
+        <div class="field">
+          <label for="years">
+            Rok otplate (plan)
+            <span class="tip">godina</span>
+          </label>
+          <input id="years" type="number" min="1" step="0.5" required value="30" />
+        </div>
+
+        <div class="field">
+          <label for="type">
+            Vrsta otplate
+            <span class="tip">anuitet ili fiksna glavnica</span>
+          </label>
+          <select id="type">
+            <option value="anuitet" selected>Anuitet (fiksna mjesečna uplata)</option>
+            <option value="glavnica">Fiksna glavnica + kamata (rata pada kroz vrijeme)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="allocation">
+            Mjesečno odvajanje
+            <span class="tip">€ ukupno koje si spreman izdvojiti mjesečno (rata + štednja)</span>
+          </label>
+          <input id="allocation" type="number" min="0" step="1" required value="800" />
+        </div>
+
+        <div class="calc-col-span">
+          <button class="calc-button" type="submit">Izračunaj plan</button>
+        </div>
+      </form>
+
+      <div class="disclaimer">
+        ⚠ Ovaj kalkulator je edukativan. Pretpostavljamo:
+        (1) Plaćaš redovnu ratu svaki mjesec.
+        (2) Razlika između "mjesečno odvajanje" i rate ide u štednju.
+        (3) Svakih 12 mjeseci cijelu štednju jednokratno uplatiš u glavnicu (prijevremena otplata).
+        Nakon te uplate, otplata se praktično "re-kalibrira". Banke to u praksi mogu drugačije obračunati
+        (npr. smanjiti ratu umjesto skratiti rok). Ovo je alat za razumijevanje dinamike, ne pravno/financijsko savjetovanje.
+      </div>
+    </section>
+
+    <!-- SUMMARY CARD -->
+    <section class="card">
+      <div class="section-head">
+        <h2><span class="dot"></span> Sažetak scenarija</h2>
+        <div class="sub">Koliko brzo završiš kredit, kolike su kamate i koliko si uplatio prijevremeno.</div>
+      </div>
+
+      <div id="summaryBox" class="summary-wrapper">
+        <div style="font-size:.8rem;color:var(--muted);">
+          Još nema podataka. Ispuni formu iznad i klikni "Izračunaj plan".
+        </div>
+      </div>
+    </section>
+
+    <!-- TABLE CARD -->
+    <section class="card">
+      <div class="section-head">
+        <h2><span class="dot"></span> Detaljni otplatni plan (mjesečno)</h2>
+        <div class="sub">
+          Svaki red = 1 mjesec. Redovi s plavom pozadinom su mjeseci kad se radi godišnja prijevremena uplata glavnice.
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="scheduleTable">
+          <thead>
+            <tr>
+              <th class="col-left">Mjesec</th>
+              <th>Redovna rata</th>
+              <th>Kamata dio</th>
+              <th>Otplata glavnice</th>
+              <th>Godišnja uplata na glavnicu</th>
+              <th>Ušteđevina (kraj mj.)</th>
+              <th>Preostala glavnica</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-left" colspan="7" style="text-align:center;color:var(--muted);padding:2rem .75rem;">
+                Nema podataka još. Nakon izračuna ovdje će se pojaviti plan po mjesecima.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // -----------------------
+    // Helper format funkcije
+    // -----------------------
+    function formatCurrency(n){
+      if (isNaN(n)) return "-";
+      return n.toLocaleString("hr-HR", {
+        style:"currency",
+        currency:"EUR",
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+      });
+    }
+
+    function formatNumber2(n){
+      if (isNaN(n)) return "-";
+      return n.toLocaleString("hr-HR", {
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+      });
+    }
+
+    // Pretvori ukupne mjesece u tekst npr "23 god. 0 mj. (276 mj.)"
+    function humanDuration(months){
+      const y = Math.floor(months/12);
+      const m = months % 12;
+      return `${y} god. ${m} mj. (${months} mj.)`;
+    }
+
+    // ---------------------------------------
+    // Glavna simulacija otplate kredita
+    // ---------------------------------------
+    function generateSchedule(P, annualRate, years, loanType, allocation){
+      const r = (annualRate/100)/12; // mjesečna kamatna stopa
+      const totalMonths = Math.round(years*12);
+
+      let remaining = P;
+      let savings = 0;
+      let rows = [];
+      let totalInterest = 0;
+      let totalLump = 0;
+
+      let month = 1;
+      let guard = 0;
+
+      while(remaining > 1e-8 && guard < 10000){
+        guard++;
+
+        const remainingMonths = Math.max(totalMonths - (month-1), 1);
+
+        let payment, interest, principalPay;
+        if(loanType === "anuitet"){
+          if(r === 0){
+            // bez kamata - samo jednoliko
+            payment = remaining / remainingMonths;
+          } else {
+            const powv = Math.pow(1+r, remainingMonths);
+            payment = remaining * (r * powv)/(powv - 1);
+          }
+          interest = remaining * r;
+          principalPay = payment - interest;
+        } else {
+          // "glavnica" = fiksni dio glavnice + kamata na ostatak
+          const basePrincipal = P / totalMonths;
+          principalPay = Math.min(basePrincipal, remaining);
+          interest = remaining * r;
+          payment = principalPay + interest;
+        }
+
+        // razlika između "što mjesečno mogu izdvojiti" i obavezne rate => štednja
+        const saveAdd = Math.max(allocation - payment, 0);
+        savings += saveAdd;
+
+        // primijeni redovnu uplatu
+        remaining -= principalPay;
+        if(remaining < 1e-8){ remaining = 0; }
+
+        // svakih 12 mjeseci uplati cijelu ušteđevinu u glavnicu
+        let lump = 0;
+        if(month % 12 === 0 && remaining > 0){
+          lump = Math.min(savings, remaining);
+          remaining -= lump;
+          savings -= lump;
+          totalLump += lump;
+          if(remaining < 1e-8){ remaining = 0; }
+        }
+
+        totalInterest += interest;
+
+        rows.push({
+          month,
+          payment,
+          interest,
+          principal: principalPay,
+          lump,
+          savings,
+          remaining
+        });
+
+        if(remaining <= 0){
+          break;
+        }
+
+        month++;
+      }
+
+      return {
+        rows,
+        totalInterest,
+        totalLump,
+        monthsToFinish: month
+      };
+    }
+
+    // -----------------------
+    // Render sažetka
+    // -----------------------
+    function renderSummary(result, allocation){
+      const box = document.getElementById("summaryBox");
+
+      if(!result || !result.rows || result.rows.length === 0){
+        box.innerHTML = `<div style="font-size:.8rem;color:var(--muted);">
+          Još nema podataka. Ispuni formu iznad i klikni "Izračunaj plan".
+        </div>`;
+        return;
+      }
+
+      const firstPayment = result.rows[0].payment || 0;
+      const warningNeeded = result.rows.some(r => r.payment > allocation);
+
+      const months = result.monthsToFinish;
+      const durationTxt = humanDuration(months);
+
+      const totalInterest = result.totalInterest;
+      const totalLump = result.totalLump;
+
+      // zadnja preostala glavnica (trebala bi biti 0)
+      const lastRow = result.rows[result.rows.length-1];
+      const endSavings = lastRow ? lastRow.savings : 0;
+
+      const warnHtml = warningNeeded
+        ? `<div class="warning">
+            ⚠ U nekim mjesecima rata je veća od zadanog "mjesečnog odvajanja".
+            Kalkulator svejedno pretpostavlja da redovnu ratu uvijek uspijevaš platiti,
+            ali tada nema dodatne štednje taj mjesec.
+          </div>`
+        : "";
+
+      box.innerHTML = `
+        <div class="summary-grid">
+
+          <div class="summary-item">
+            <div class="summary-label">
+              <span>Efektivno trajanje kredita</span>
+            </div>
+            <div class="summary-value">${durationTxt}</div>
+            <div class="summary-hint">Rok se može skratiti zbog godišnjih prijevremenih uplata glavnice.</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-label">
+              <span>Početna mjesečna rata</span>
+              <span style="color:var(--accent);font-weight:600;">(mjesec 1)</span>
+            </div>
+            <div class="summary-value">${formatCurrency(firstPayment)}</div>
+            <div class="summary-hint">Ovo je "osnovna rata". Razlika do tvog mjesečnog izdvajanja ide u štednju.</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-label">
+              <span>Ukupno plaćena kamata</span>
+            </div>
+            <div class="summary-value">${formatCurrency(totalInterest)}</div>
+            <div class="summary-hint">Zbroj svih mjesečnih kamata do trenutka potpunog zatvaranja kredita.</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-label">
+              <span>Prijevremene uplate</span>
+              <span style="color:var(--accent);font-weight:600;">(1× godišnje)</span>
+            </div>
+            <div class="summary-value">${formatCurrency(totalLump)}</div>
+            <div class="summary-hint">Ukupan iznos koji je kroz štednju svake godine spuštao glavnicu.</div>
+          </div>
+
+        </div>
+
+        ${warnHtml}
+
+        <div class="disclaimer" style="margin-top:1rem;">
+          Na kraju otplate preostala glavnica ≈ 0 €. Ako vidiš sitan ostatak štednje (${formatCurrency(endSavings)}),
+          to znači da zadnjim godišnjim uplatom otplatiš sve i ostane ti malo neiskorištene štednje.
+        </div>
+      `;
+    }
+
+    // -----------------------
+    // Render tablice
+    // -----------------------
+    function renderTable(rows){
+      const tbody = document.querySelector("#scheduleTable tbody");
+
+      if(!rows || rows.length === 0){
+        tbody.innerHTML = `
+          <tr>
+            <td class="col-left" colspan="7" style="text-align:center;color:var(--muted);padding:2rem .75rem;">
+              Nema podataka još. Nakon izračuna ovdje će se pojaviti plan po mjesecima.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      let html = "";
+      rows.forEach(r => {
+        html += `
+          <tr class="${r.lump > 0 ? "lump-row" : ""}">
+            <td class="col-left">${r.month}</td>
+            <td>${formatCurrency(r.payment)}</td>
+            <td>${formatCurrency(r.interest)}</td>
+            <td>${formatCurrency(r.principal)}</td>
+            <td>${r.lump > 0 ? formatCurrency(r.lump) : "-"}</td>
+            <td>${formatCurrency(r.savings)}</td>
+            <td>${formatCurrency(r.remaining)}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    // -----------------------
+    // Glavna kalk funkcija
+    // -----------------------
+    function recalc(){
+      const principal = parseFloat(document.getElementById("principal").value);
+      const rate = parseFloat(document.getElementById("rate").value);
+      const years = parseFloat(document.getElementById("years").value);
+      const type = document.getElementById("type").value;
+      const allocation = parseFloat(document.getElementById("allocation").value);
+
+      if(
+        isNaN(principal) || principal<=0 ||
+        isNaN(rate) || rate<0 ||
+        isNaN(years) || years<=0 ||
+        isNaN(allocation) || allocation<0
+      ){
+        // ako nešto fali, ne računamo
+        renderSummary(null, allocation);
+        renderTable([]);
+        return;
+      }
+
+      const result = generateSchedule(principal, rate, years, type, allocation);
+
+      renderSummary(result, allocation);
+      renderTable(result.rows);
+    }
+
+    // -----------------------
+    // Eventi
+    // -----------------------
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("calcForm");
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        recalc();
+      });
+
+      // inicijalni primjer s default vrijednostima
+      recalc();
+    });
+  </script>
+</body>
+</html>
